@@ -17,5 +17,10 @@
     <PackageReference Include="Microting.WindowsService.BasePn" Version="1.1.13" />
     <PackageReference Include="System.ComponentModel.Composition" Version="4.5.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microting.EformMonitoringBase">
+      <HintPath>..\..\eform-monitoring-base\Microting.EformMonitoringBase\bin\Debug\netcoreapp2.2\Microting.EformMonitoringBase.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
 </Project>

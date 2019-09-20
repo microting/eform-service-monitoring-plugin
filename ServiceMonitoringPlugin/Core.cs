@@ -1,14 +1,18 @@
 /*
 The MIT License (MIT)
+
 Copyright (c) 2007 - 2019 Microting A/S
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -18,35 +22,36 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System;
-using System.ComponentModel.Composition;
-using System.Text.RegularExpressions;
-using System.Threading;
-using Castle.MicroKernel.Registration;
-using Castle.Windsor;
-using Microting.eForm.Dto;
-using Microting.MonitoringBase.Infrastructure.Data;
-using Microting.WindowsService.BasePn;
-using Rebus.Bus;
-using ServiceMonitoringPlugin.Installers;
-using Microting.MonitoringBase.Infrastructure.Data.Factories;
-using ServiceMonitoringPlugin.Messages;
-
 namespace ServiceMonitoringPlugin
 {
+    using System;
+    using System.ComponentModel.Composition;
+    using System.Text.RegularExpressions;
+    using System.Threading;
+    using Castle.MicroKernel.Registration;
+    using Castle.Windsor;
+    using Installers;
+    using Messages;
+    using Microsoft.EntityFrameworkCore;
+    using Microting.eForm.Dto;
+    using Microting.EformMonitoringBase.Infrastructure.Data;
+    using Microting.EformMonitoringBase.Infrastructure.Data.Factories;
+    using Microting.WindowsService.BasePn;
+    using Rebus.Bus;
+
     [Export(typeof(ISdkEventHandler))]
     public class Core : ISdkEventHandler
     {
         private eFormCore.Core _sdkCore;
         private IWindsorContainer _container;
         private IBus _bus;
-        private bool _coreThreadRunning = false;
+        private readonly bool _coreThreadRunning = false;
         private bool _coreStatChanging;
         private bool _coreAvailable;
         private string _serviceLocation;
         private const int MaxParallelism = 1;
         private const int NumberOfWorkers = 1;
-        private MonitoringPnDbContext _dbContext;
+        private EformMonitoringPnDbContext _dbContext;
 
         public void CoreEventException(object sender, EventArgs args)
         {
@@ -73,7 +78,7 @@ namespace ServiceMonitoringPlugin
             Case_Dto trigger = (Case_Dto)sender;
 
             string caseId = trigger.MicrotingUId;
-            _bus.SendLocal(new eFormRetrieved(caseId));
+            _bus.SendLocal(new EformRetrieved(caseId));
         }
 
         public void CaseCompleted(object sender, EventArgs args)
@@ -83,7 +88,7 @@ namespace ServiceMonitoringPlugin
             if (trigger.CaseId != null)
             {
                 int caseId = (int)trigger.CaseId;
-                _bus.SendLocal(new eFormCompleted(caseId));
+                _bus.SendLocal(new EformCompleted(caseId));
             }
         }
 
@@ -130,7 +135,7 @@ namespace ServiceMonitoringPlugin
                     if (string.IsNullOrEmpty(connectionString))
                         throw new ArgumentException("serverConnectionString is not allowed to be null or empty");
 
-                    MonitoringPnContextFactory contextFactory = new MonitoringPnContextFactory();
+                    EformMonitoringPnDbContextFactory contextFactory = new EformMonitoringPnDbContextFactory();
 
                     _dbContext = contextFactory.CreateDbContext(new[] { connectionString });
                     _dbContext.Database.Migrate();
@@ -142,7 +147,7 @@ namespace ServiceMonitoringPlugin
                     
                     _container = new WindsorContainer();
                     _container.Register(Component.For<IWindsorContainer>().Instance(_container));
-                    _container.Register(Component.For<MonitoringPnDbContext>().Instance(_dbContext));
+                    _container.Register(Component.For<EformMonitoringPnDbContext>().Instance(_dbContext));
                     _container.Register(Component.For<eFormCore.Core>().Instance(_sdkCore));
                     _container.Install(
                         new RebusHandlerInstaller()
@@ -201,7 +206,6 @@ namespace ServiceMonitoringPlugin
         public void StartSdkCoreSqlOnly(string sdkConnectionString)
         {
             _sdkCore = new eFormCore.Core();
-
             _sdkCore.StartSqlOnly(sdkConnectionString);
         }
     }
