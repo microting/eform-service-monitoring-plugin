@@ -27,9 +27,11 @@ namespace ServiceMonitoringPlugin.Handlers
     using System;
     using System.Linq;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Helpers;
     using Messages;
     using Microsoft.EntityFrameworkCore;
+    using Microting.eForm.Dto;
     using Microting.eForm.Infrastructure.Constants;
     using Microting.eForm.Infrastructure.Models;
     using Microting.EformMonitoringBase.Infrastructure.Data;
@@ -79,18 +81,19 @@ namespace ServiceMonitoringPlugin.Handlers
                     sendGridKey.Value,
                     fromEmailName.Value,
                     fromEmailAddress.Value);
+                
                 // Get rules
-                var templateId = 1;
+                var caseDto = _sdkCore.CaseLookupCaseId(message.CaseId);
+                var replyElement = _sdkCore.CaseRead(caseDto.MicrotingUId, caseDto.CheckUId);
+                var dataItems = replyElement.DataItemGetAll();
+                var checkListId = caseDto.CheckListId;
+
                 var rules = await _dbContext.Rules
                     .AsNoTracking()
                     .Include(x => x.Recipients)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.TemplateId == templateId)
+                    .Where(x => x.CheckListId == checkListId)
                     .ToListAsync();
-
-                var caseDto = _sdkCore.CaseLookupCaseId(message.CaseId);
-                var replyElement = _sdkCore.CaseRead(caseDto.MicrotingUId, caseDto.CheckUId);
-                var dataItems = replyElement.DataItemGetAll();
 
                 // Find trigger
                 foreach (var rule in rules)
@@ -129,13 +132,29 @@ namespace ServiceMonitoringPlugin.Handlers
                             {
                                 foreach (var recipient in rule.Recipients)
                                 {
-                                    // TODO Get report file
-                                    string fileName = "";
+                                    // Fix for broken SDK not handling empty customXmlContent well
+                                    string customXmlContent = new XElement("FillerElement",
+                                        new XElement("InnerElement", "SomeValue")).ToString();
+
+                                    // get report file
+                                    var filePath = _sdkCore.CaseToPdf(
+                                        message.CaseId,
+                                        checkListId.ToString(),
+                                        DateTime.Now.ToString("yyyyMMddHHmmssffff"),
+                                        $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
+                                        "pdf",
+                                        customXmlContent);
+
+                                    if (!System.IO.File.Exists(filePath))
+                                    {
+                                        throw new Exception("Error while creating report file");
+                                    }
+
                                     await emailService.SendFileAsync(
                                         rule.Subject,
                                         recipient.Email,
                                         rule.Text,
-                                        fileName);
+                                        filePath);
                                 }
                             }
                             else
