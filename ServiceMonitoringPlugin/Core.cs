@@ -77,7 +77,7 @@ namespace ServiceMonitoringPlugin
         {
             Case_Dto trigger = (Case_Dto)sender;
 
-            string caseId = trigger.MicrotingUId;
+            string caseId = trigger.MicrotingUId.ToString();
             _bus.SendLocal(new EformRetrieved(caseId));
         }
 
@@ -85,10 +85,9 @@ namespace ServiceMonitoringPlugin
         {
             Case_Dto trigger = (Case_Dto)sender;
 
-            if (trigger.CaseId != null)
+            if (trigger.CheckUId != null && trigger.MicrotingUId != null)
             {
-                int caseId = (int)trigger.CaseId;
-                _bus.SendLocal(new EformCompleted(caseId));
+               _bus.SendLocal(new EformCompleted(trigger.CheckListId, trigger.CheckUId.Value, trigger.MicrotingUId.Value));
             }
         }
 

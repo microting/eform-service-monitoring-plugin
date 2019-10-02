@@ -58,19 +58,19 @@ namespace ServiceMonitoringPlugin.Handlers
                 // Get settings
                 var settings = await _dbContext.PluginConfigurationValues
                     .ToListAsync();
-                var sendGridKey = settings.FirstOrDefault(x => 
+                var sendGridKey = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings.SendGridApiKey));
                 if (sendGridKey == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.SendGridApiKey)} not found in settings");
                 }
-                var fromEmailAddress = settings.FirstOrDefault(x => 
+                var fromEmailAddress = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings.FromEmailAddress));
                 if (fromEmailAddress == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailAddress)} not found in settings");
                 }
-                var fromEmailName = settings.FirstOrDefault(x => 
+                var fromEmailName = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings.FromEmailName));
                 if (fromEmailName == null)
                 {
@@ -81,18 +81,18 @@ namespace ServiceMonitoringPlugin.Handlers
                     sendGridKey.Value,
                     fromEmailName.Value,
                     fromEmailAddress.Value);
-                
+
                 // Get rules
-                var caseDto = _sdkCore.CaseLookupCaseId(message.CaseId);
-                var replyElement = _sdkCore.CaseRead(caseDto.MicrotingUId, caseDto.CheckUId);
-                var dataItems = replyElement.DataItemGetAll();
-                var checkListId = caseDto.CheckListId;
+                var caseId = _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
+                var replyElement = _sdkCore.CaseRead(message.microtingUId, message.checkUId);
+                var checkListValue = (CheckListValue)replyElement.ElementList[0];
+                var dataItems = checkListValue.DataItemList;
 
                 var rules = await _dbContext.Rules
                     .AsNoTracking()
                     .Include(x => x.Recipients)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
-                    .Where(x => x.CheckListId == checkListId)
+                    .Where(x => x.CheckListId == message.checkListId)
                     .ToListAsync();
 
                 // Find trigger
@@ -100,75 +100,98 @@ namespace ServiceMonitoringPlugin.Handlers
                 {
                     var dataItemId = rule.DataItemId;
                     var dataItem = dataItems.FirstOrDefault(x => x.Id == dataItemId);
-                    if (dataItem != null)
+                    var field = (Field)dataItem;
+
+                    // Check
+                    var sendEmail = false;
+                    switch (dataItem)
                     {
-                        // Check
-                        var sendEmail = false;
-                        switch (dataItem)
-                        {
-                            case CheckBox checkBox:
-                                var block = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data);
-                                if (checkBox.Selected == block.Selected)
+                        case Number number:
+                            var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data);
+
+                            sendEmail = true;
+
+                            if (numberBlock.GreaterThanValue != null && int.Parse(field.FieldValue) < numberBlock.GreaterThanValue)
+                            {
+                                sendEmail = false;
+                            }
+
+                            if (numberBlock.LessThanValue != null && int.Parse(field.FieldValue) > numberBlock.LessThanValue)
+                            {
+                                sendEmail = false;
+                            }
+
+                            if (numberBlock.EqualValue != null && int.Parse(field.FieldValue) == numberBlock.EqualValue)
+                            {
+                                sendEmail = true;
+                            }
+                            break;
+                        case CheckBox checkBox:
+                            var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data);
+                            var isChecked = field.FieldValue == "1" || field.FieldValue == "checked";
+                            sendEmail = isChecked == checkboxBlock.Selected;
+                            break;
+                        case MultiSelect multiSelect:
+                        case SingleSelect singleSelect:
+                        case EntitySearch entitySearch:
+                        case EntitySelect entitySelect:
+                            var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data);
+
+                            foreach (var item in selectBlock.KeyValuePairList)
+                            {
+                                var option = field.KeyValuePairList.FirstOrDefault(o => o.Key == item.Key);
+                                if (option != null && option.Selected && item.Selected)
                                 {
                                     sendEmail = true;
                                 }
-                                break;
-                            case EntitySearch entitySearch:
-                                break;
-                            case EntitySelect entitySelect:
-                                break;
-                            case MultiSelect multiSelect:
-                                break;
-                            case Number number:
-                                break;
-                            case SingleSelect singleSelect:
-                                break;
-                        }
-
-                        // Send email
-                        if (sendEmail)
-                        {
-                            if (rule.AttachReport)
-                            {
-                                foreach (var recipient in rule.Recipients)
-                                {
-                                    // Fix for broken SDK not handling empty customXmlContent well
-                                    string customXmlContent = new XElement("FillerElement",
-                                        new XElement("InnerElement", "SomeValue")).ToString();
-
-                                    // get report file
-                                    var filePath = _sdkCore.CaseToPdf(
-                                        message.CaseId,
-                                        checkListId.ToString(),
-                                        DateTime.Now.ToString("yyyyMMddHHmmssffff"),
-                                        $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
-                                        "pdf",
-                                        customXmlContent);
-
-                                    if (!System.IO.File.Exists(filePath))
-                                    {
-                                        throw new Exception("Error while creating report file");
-                                    }
-
-                                    await emailService.SendFileAsync(
-                                        rule.Subject,
-                                        recipient.Email,
-                                        rule.Text,
-                                        filePath);
-                                }
                             }
-                            else
+                            break;
+                    }
+
+                    // Send email
+                    if (sendEmail)
+                    {
+                        if (rule.AttachReport)
+                        {
+                            foreach (var recipient in rule.Recipients)
                             {
-                                foreach (var recipient in rule.Recipients)
+                                // Fix for broken SDK not handling empty customXmlContent well
+                                string customXmlContent = new XElement("FillerElement",
+                                    new XElement("InnerElement", "SomeValue")).ToString();
+
+                                // get report file
+                                var filePath = _sdkCore.CaseToPdf(
+                                    caseId,
+                                    message.checkUId.ToString(),
+                                    DateTime.Now.ToString("yyyyMMddHHmmssffff"),
+                                    $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
+                                    "pdf",
+                                    customXmlContent);
+
+                                if (!System.IO.File.Exists(filePath))
                                 {
-                                    await emailService.SendAsync(
-                                        rule.Subject,
-                                        recipient.Email,
-                                        rule.Text);
+                                    throw new Exception("Error while creating report file");
                                 }
+
+                                await emailService.SendFileAsync(
+                                    rule.Subject,
+                                    recipient.Email,
+                                    rule.Text,
+                                    filePath);
+                            }
+                        }
+                        else
+                        {
+                            foreach (var recipient in rule.Recipients)
+                            {
+                                await emailService.SendAsync(
+                                    rule.Subject,
+                                    recipient.Email,
+                                    rule.Text);
                             }
                         }
                     }
+
                 }
 
                 

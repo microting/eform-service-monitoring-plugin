@@ -26,11 +26,15 @@ namespace ServiceMonitoringPlugin.Messages
 {
     public class EformCompleted
     {
-        public int CaseId { get; protected set; }
+        public int checkUId { get; protected set; }
+        public int microtingUId { get; protected set; }
+        public int checkListId { get; protected set; }
 
-        public EformCompleted(int caseId)
+        public EformCompleted(int checkListId, int checkUId, int microtingUId)
         {
-            this.CaseId = caseId;
+            this.checkListId = checkListId;
+            this.checkUId = checkUId;
+            this.microtingUId = microtingUId;
         }
     }
 }
