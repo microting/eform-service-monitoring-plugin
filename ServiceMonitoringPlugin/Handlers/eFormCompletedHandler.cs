@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
 namespace ServiceMonitoringPlugin.Handlers
 {
     using System;
@@ -58,19 +59,19 @@ namespace ServiceMonitoringPlugin.Handlers
                 var settings = await _dbContext.PluginConfigurationValues
                     .ToListAsync();
                 var sendGridKey = settings.FirstOrDefault(x =>
-                    x.Name == nameof(MonitoringBaseSettings.SendGridApiKey));
+                    x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.SendGridApiKey));
                 if (sendGridKey == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.SendGridApiKey)} not found in settings");
                 }
                 var fromEmailAddress = settings.FirstOrDefault(x =>
-                    x.Name == nameof(MonitoringBaseSettings.FromEmailAddress));
+                    x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailAddress));
                 if (fromEmailAddress == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailAddress)} not found in settings");
                 }
                 var fromEmailName = settings.FirstOrDefault(x =>
-                    x.Name == nameof(MonitoringBaseSettings.FromEmailName));
+                    x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailName));
                 if (fromEmailName == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailName)} not found in settings");
@@ -150,31 +151,42 @@ namespace ServiceMonitoringPlugin.Handlers
                         {
                             if (rule.AttachReport)
                             {
-                                foreach (var recipient in rule.Recipients)
+                                foreach (var recipient in rule.Recipients.Where(r => r.WorkflowState != Constants.WorkflowStates.Removed))
                                 {
-                                    // Fix for broken SDK not handling empty customXmlContent well
-                                    string customXmlContent = new XElement("FillerElement",
-                                        new XElement("InnerElement", "SomeValue")).ToString();
-
-                                    // get report file
-                                    var filePath = _sdkCore.CaseToPdf(
-                                        caseId,
-                                        message.checkUId.ToString(),
-                                        DateTime.Now.ToString("yyyyMMddHHmmssffff"),
-                                        $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
-                                        "pdf",
-                                        customXmlContent);
-
-                                    if (!System.IO.File.Exists(filePath))
+                                    try
                                     {
-                                        throw new Exception("Error while creating report file");
-                                    }
+                                        // Fix for broken SDK not handling empty customXmlContent well
+                                        string customXmlContent = new XElement("FillerElement",
+                                            new XElement("InnerElement", "SomeValue")).ToString();
 
-                                    await emailService.SendFileAsync(
-                                        rule.Subject,
-                                        recipient.Email,
-                                        rule.Text,
-                                        filePath);
+                                        // get report file
+                                        var filePath = _sdkCore.CaseToPdf(
+                                            caseId,
+                                            replyElement.Id.ToString(),
+                                            DateTime.Now.ToString("yyyyMMddHHmmssffff"),
+                                            $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
+                                            "pdf",
+                                            customXmlContent);
+
+                                        if (!System.IO.File.Exists(filePath))
+                                        {
+                                            throw new Exception("Error while creating report file");
+                                        }
+
+                                        await emailService.SendFileAsync(
+                                            rule.Subject,
+                                            recipient.Email,
+                                            rule.Text,
+                                            filePath);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine(e);
+                                        await emailService.SendAsync(
+                                            rule.Subject,
+                                            recipient.Email,
+                                            rule.Text);
+                                    }
                                 }
                             }
                             else
