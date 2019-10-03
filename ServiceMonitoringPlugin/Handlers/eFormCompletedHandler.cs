@@ -21,7 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 namespace ServiceMonitoringPlugin.Handlers
 {
     using System;
@@ -86,7 +85,7 @@ namespace ServiceMonitoringPlugin.Handlers
                 var caseId = _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
                 var replyElement = _sdkCore.CaseRead(message.microtingUId, message.checkUId);
                 var checkListValue = (CheckListValue)replyElement.ElementList[0];
-                var dataItems = checkListValue.DataItemList;
+                var fields = checkListValue.DataItemList;
 
                 var rules = await _dbContext.Rules
                     .AsNoTracking()
@@ -99,103 +98,98 @@ namespace ServiceMonitoringPlugin.Handlers
                 foreach (var rule in rules)
                 {
                     var dataItemId = rule.DataItemId;
-                    var dataItem = dataItems.FirstOrDefault(x => x.Id == dataItemId);
-                    var field = (Field)dataItem;
+                    var field = (Field)fields.FirstOrDefault(x => x.Id == dataItemId);
 
-                    // Check
-                    var sendEmail = false;
-                    switch (dataItem)
+                    if (field != null)
                     {
-                        case Number number:
-                            var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data);
+                        // Check
+                        var sendEmail = false;
+                        switch (field.FieldType)
+                        {
+                            case "Number":
+                                var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data);
+                                var numberVal = int.Parse(field.FieldValues[0].Value);
 
-                            sendEmail = true;
-
-                            if (numberBlock.GreaterThanValue != null && int.Parse(field.FieldValue) < numberBlock.GreaterThanValue)
-                            {
-                                sendEmail = false;
-                            }
-
-                            if (numberBlock.LessThanValue != null && int.Parse(field.FieldValue) > numberBlock.LessThanValue)
-                            {
-                                sendEmail = false;
-                            }
-
-                            if (numberBlock.EqualValue != null && int.Parse(field.FieldValue) == numberBlock.EqualValue)
-                            {
                                 sendEmail = true;
-                            }
-                            break;
-                        case CheckBox checkBox:
-                            var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data);
-                            var isChecked = field.FieldValue == "1" || field.FieldValue == "checked";
-                            sendEmail = isChecked == checkboxBlock.Selected;
-                            break;
-                        case MultiSelect multiSelect:
-                        case SingleSelect singleSelect:
-                        case EntitySearch entitySearch:
-                        case EntitySelect entitySelect:
-                            var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data);
 
-                            foreach (var item in selectBlock.KeyValuePairList)
-                            {
-                                var option = field.KeyValuePairList.FirstOrDefault(o => o.Key == item.Key);
-                                if (option != null && option.Selected && item.Selected)
+                                if (numberBlock.GreaterThanValue != null && numberVal < numberBlock.GreaterThanValue)
+                                {
+                                    sendEmail = false;
+                                }
+
+                                if (numberBlock.LessThanValue != null && numberVal > numberBlock.LessThanValue)
+                                {
+                                    sendEmail = false;
+                                }
+
+                                if (numberBlock.EqualValue != null && numberVal == numberBlock.EqualValue)
                                 {
                                     sendEmail = true;
                                 }
-                            }
-                            break;
-                    }
 
-                    // Send email
-                    if (sendEmail)
-                    {
-                        if (rule.AttachReport)
+                                break;
+                            case "CheckBox":
+                                var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data);
+                                var isChecked = field.FieldValue == "1" || field.FieldValue == "checked";
+                                sendEmail = isChecked == checkboxBlock.Selected;
+                                break;
+                            case "MultiSelect":
+                            case "SingleSelect":
+                            case "EntitySearch":
+                            case "EntitySelect":
+                                var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data);
+                                var selectKeys = field.FieldValues[0].Value.Split('|');
+
+                                sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
+
+                                break;
+                        }
+
+                        // Send email
+                        if (sendEmail)
                         {
-                            foreach (var recipient in rule.Recipients)
+                            if (rule.AttachReport)
                             {
-                                // Fix for broken SDK not handling empty customXmlContent well
-                                string customXmlContent = new XElement("FillerElement",
-                                    new XElement("InnerElement", "SomeValue")).ToString();
-
-                                // get report file
-                                var filePath = _sdkCore.CaseToPdf(
-                                    caseId,
-                                    message.checkUId.ToString(),
-                                    DateTime.Now.ToString("yyyyMMddHHmmssffff"),
-                                    $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
-                                    "pdf",
-                                    customXmlContent);
-
-                                if (!System.IO.File.Exists(filePath))
+                                foreach (var recipient in rule.Recipients)
                                 {
-                                    throw new Exception("Error while creating report file");
-                                }
+                                    // Fix for broken SDK not handling empty customXmlContent well
+                                    string customXmlContent = new XElement("FillerElement",
+                                        new XElement("InnerElement", "SomeValue")).ToString();
 
-                                await emailService.SendFileAsync(
-                                    rule.Subject,
-                                    recipient.Email,
-                                    rule.Text,
-                                    filePath);
+                                    // get report file
+                                    var filePath = _sdkCore.CaseToPdf(
+                                        caseId,
+                                        message.checkUId.ToString(),
+                                        DateTime.Now.ToString("yyyyMMddHHmmssffff"),
+                                        $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
+                                        "pdf",
+                                        customXmlContent);
+
+                                    if (!System.IO.File.Exists(filePath))
+                                    {
+                                        throw new Exception("Error while creating report file");
+                                    }
+
+                                    await emailService.SendFileAsync(
+                                        rule.Subject,
+                                        recipient.Email,
+                                        rule.Text,
+                                        filePath);
+                                }
                             }
-                        }
-                        else
-                        {
-                            foreach (var recipient in rule.Recipients)
+                            else
                             {
-                                await emailService.SendAsync(
-                                    rule.Subject,
-                                    recipient.Email,
-                                    rule.Text);
+                                foreach (var recipient in rule.Recipients)
+                                {
+                                    await emailService.SendAsync(
+                                        rule.Subject,
+                                        recipient.Email,
+                                        rule.Text);
+                                }
                             }
                         }
                     }
-
                 }
-
-                
-                
             }
             catch (Exception e)
             {
