@@ -104,11 +104,15 @@ namespace ServiceMonitoringPlugin.Handlers
                     if (field != null)
                     {
                         // Check
+                        var jsonSettings = new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Include
+                        };
                         var sendEmail = false;
                         switch (field.FieldType)
                         {
                             case "Number":
-                                var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data);
+                                var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data, jsonSettings);
                                 var numberVal = int.Parse(field.FieldValues[0].Value);
 
                                 sendEmail = true;
@@ -130,7 +134,7 @@ namespace ServiceMonitoringPlugin.Handlers
 
                                 break;
                             case "CheckBox":
-                                var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data);
+                                var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data, jsonSettings);
                                 var isChecked = field.FieldValue == "1" || field.FieldValue == "checked";
                                 sendEmail = isChecked == checkboxBlock.Selected;
                                 break;
@@ -138,7 +142,7 @@ namespace ServiceMonitoringPlugin.Handlers
                             case "SingleSelect":
                             case "EntitySearch":
                             case "EntitySelect":
-                                var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data);
+                                var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
                                 var selectKeys = field.FieldValues[0].Value.Split('|');
 
                                 sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
