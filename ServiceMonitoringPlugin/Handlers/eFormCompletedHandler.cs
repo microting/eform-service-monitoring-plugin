@@ -56,8 +56,7 @@ namespace ServiceMonitoringPlugin.Handlers
             try
             {
                 // Get settings
-                var settings = await _dbContext.PluginConfigurationValues
-                    .ToListAsync();
+                var settings = await _dbContext.PluginConfigurationValues.ToListAsync();
                 var sendGridKey = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.SendGridApiKey));
                 if (sendGridKey == null)
@@ -77,10 +76,7 @@ namespace ServiceMonitoringPlugin.Handlers
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailName)} not found in settings");
                 }
 
-                var emailService = new EmailService(
-                    sendGridKey.Value,
-                    fromEmailName.Value,
-                    fromEmailAddress.Value);
+                var emailService = new EmailService(sendGridKey.Value, fromEmailName.Value, fromEmailAddress.Value);
 
                 // Get rules
                 var caseId = _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
@@ -88,8 +84,7 @@ namespace ServiceMonitoringPlugin.Handlers
                 var checkListValue = (CheckListValue)replyElement.ElementList[0];
                 var fields = checkListValue.DataItemList;
 
-                var rules = await _dbContext.Rules
-                    .AsNoTracking()
+                var rules = await _dbContext.Rules.AsNoTracking()
                     .Include(x => x.Recipients)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.CheckListId == message.checkListId)
@@ -135,17 +130,23 @@ namespace ServiceMonitoringPlugin.Handlers
                                 break;
                             case "CheckBox":
                                 var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data, jsonSettings);
-                                var isChecked = field.FieldValue == "1" || field.FieldValue == "checked";
+                                var isChecked = field.FieldValues[0].Value == "1" || field.FieldValues[0].Value == "checked";
                                 sendEmail = isChecked == checkboxBlock.Selected;
                                 break;
                             case "MultiSelect":
                             case "SingleSelect":
-                            case "EntitySearch":
-                            case "EntitySelect":
                                 var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
                                 var selectKeys = field.FieldValues[0].Value.Split('|');
 
                                 sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
+
+                                break;
+                            case "EntitySearch":
+                            case "EntitySelect":
+                                var entityBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
+                                var selectedId = field.FieldValues[0].Value;
+
+                                sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && i.Key == selectedId);
 
                                 break;
                         }
