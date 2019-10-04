@@ -37,7 +37,8 @@
                 var response = await client.SendEmailAsync(msg);
                 if (((int)response.StatusCode < 200) || ((int)response.StatusCode >= 300))
                 {
-                    throw new Exception($"Status: {response.StatusCode}");
+                    var responseText = await response.Body.ReadAsStringAsync();
+                    throw new Exception($"Status: {response.StatusCode}. Response: {responseText}");
                 }
             }
             catch (Exception ex)
