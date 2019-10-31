@@ -79,8 +79,8 @@ namespace ServiceMonitoringPlugin.Handlers
                 var emailService = new EmailService(sendGridKey.Value, fromEmailName.Value, fromEmailAddress.Value);
 
                 // Get rules
-                var caseId = _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
-                var replyElement = _sdkCore.CaseRead(message.microtingUId, message.checkUId);
+                var caseId = await _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
+                var replyElement = await _sdkCore.CaseRead(message.microtingUId, message.checkUId);
                 var checkListValue = (CheckListValue)replyElement.ElementList[0];
                 var fields = checkListValue.DataItemList;
 
@@ -165,7 +165,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                             new XElement("InnerElement", "SomeValue")).ToString();
 
                                         // get report file
-                                        var filePath = _sdkCore.CaseToPdf(
+                                        var filePath = await _sdkCore.CaseToPdf(
                                             caseId,
                                             replyElement.Id.ToString(),
                                             DateTime.Now.ToString("yyyyMMddHHmmssffff"),
