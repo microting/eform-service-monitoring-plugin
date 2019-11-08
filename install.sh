@@ -18,7 +18,7 @@ su ubuntu -c \
 "dotnet publish ServiceMonitoringPlugin.sln -o out /p:Version=$GITVERSION --runtime linux-x64 --configuration Release"
 
 su ubuntu -c \
-"mkdir -p /var/www/microting/eform-debian-service/MicrotingService/MicrotingService/out/Plugins/"
+"mkdir -p /var/www/microting/eform-debian-service/MicrotingService/out/Plugins/"
 
 su ubuntu -c \
 "cp -av /var/www/microting/eform-service-monitoring-plugin/ServiceMonitoringPlugin/out /var/www/microting/eform-debian-service/MicrotingService/out/Plugins/ServiceMonitoringPlugin"
