@@ -81,7 +81,7 @@ namespace ServiceMonitoringPlugin.Handlers
                 }
                 Log.LogEvent($"fromEmailName is {fromEmailName.Value}");
 
-                var emailService = new EmailService(sendGridKey.Value, fromEmailName.Value, fromEmailAddress.Value);
+                var emailService = new EmailService(sendGridKey.Value, fromEmailAddress.Value, fromEmailName.Value);
 
                 // Get rules
                 var caseId = await _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
