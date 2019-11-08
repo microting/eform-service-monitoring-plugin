@@ -63,18 +63,23 @@ namespace ServiceMonitoringPlugin.Handlers
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.SendGridApiKey)} not found in settings");
                 }
+                
+                Log.LogEvent($"sendGridKey is {sendGridKey.Value}");
                 var fromEmailAddress = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailAddress));
                 if (fromEmailAddress == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailAddress)} not found in settings");
                 }
+                
+                Log.LogEvent($"fromEmailAddress is {fromEmailAddress.Value}");
                 var fromEmailName = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailName));
                 if (fromEmailName == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailName)} not found in settings");
                 }
+                Log.LogEvent($"fromEmailName is {fromEmailName.Value}");
 
                 var emailService = new EmailService(sendGridKey.Value, fromEmailName.Value, fromEmailAddress.Value);
 
