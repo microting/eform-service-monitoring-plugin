@@ -22,11 +22,7 @@
             _fromEmailName = fromEmailName;
         }
 
-        public async Task SendAsync(
-            string subject,
-            string to,
-            string text = null,
-            string html = null)
+        public async Task SendAsync(string subject, string to, string text = null, string html = null)
         {
             try
             {
@@ -47,7 +43,7 @@
             }
         }
 
-        public async Task SendFileAsync(string subject, string to, string text, string fileName, string html = "")
+        public async Task SendFileAsync(string subject, string to, string fileName, string text = null, string html = null)
         {
             try
             {
