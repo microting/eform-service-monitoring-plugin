@@ -25,7 +25,10 @@ SOFTWARE.
 namespace ServiceMonitoringPlugin.Handlers
 {
     using System;
+    using System.IO;
     using System.Linq;
+    using System.Reflection;
+    using System.Text;
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using Helpers;
@@ -109,12 +112,14 @@ namespace ServiceMonitoringPlugin.Handlers
                             NullValueHandling = NullValueHandling.Include
                         };
                         var sendEmail = false;
+                        var matchedValue = "";
                         switch (field.FieldType)
                         {
                             case "Number":
                                 var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data, jsonSettings);
                                 var numberVal = int.Parse(field.FieldValues[0].Value);
 
+                                matchedValue = field.FieldValues[0].Value;
                                 sendEmail = true;
 
                                 if (numberBlock.GreaterThanValue != null && numberVal < numberBlock.GreaterThanValue)
@@ -136,6 +141,7 @@ namespace ServiceMonitoringPlugin.Handlers
                             case "CheckBox":
                                 var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data, jsonSettings);
                                 var isChecked = field.FieldValues[0].Value == "1" || field.FieldValues[0].Value == "checked";
+                                matchedValue = checkboxBlock.Selected ? "Checked" : "Not checked";
                                 sendEmail = isChecked == checkboxBlock.Selected;
                                 break;
                             case "MultiSelect":
@@ -143,6 +149,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                 var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
                                 var selectKeys = field.FieldValues[0].Value.Split('|');
 
+                                matchedValue = field.FieldValues[0].ValueReadable;
                                 sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
 
                                 break;
@@ -151,6 +158,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                 var entityBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
                                 var selectedId = field.FieldValues[0].Value;
 
+                                matchedValue = field.FieldValues[0].ValueReadable;
                                 sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && i.Key == selectedId);
 
                                 break;
@@ -159,6 +167,23 @@ namespace ServiceMonitoringPlugin.Handlers
                         // Send email
                         if (sendEmail)
                         {
+                            var assembly = Assembly.GetExecutingAssembly();
+                            var assemblyName = assembly.GetName().Name;
+                            var stream = assembly.GetManifestResourceStream($"{assemblyName}.Resources.Email.html");
+                            var comAddressBasic = await _sdkCore.GetSdkSetting(Settings.comAddressBasic);
+                            string html;
+
+                            using (var reader = new StreamReader(stream, Encoding.UTF8))
+                            {
+                                html = await reader.ReadToEndAsync();
+                            }
+
+                            html = html.Replace("{{label}}", field.Label)
+                                .Replace("{{description}}", field.Description.InderValue)
+                                .Replace("{{value}}", matchedValue)
+                                .Replace("{{link}}", $"{comAddressBasic}/cases/edit/{caseId}/{message.checkListId}")
+                                .Replace("{{text}}", rule.Text);
+
                             if (rule.AttachReport)
                             {
                                 foreach (var recipient in rule.Recipients.Where(r => r.WorkflowState != Constants.WorkflowStates.Removed))
@@ -178,7 +203,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                             "pdf",
                                             customXmlContent);
 
-                                        if (!System.IO.File.Exists(filePath))
+                                        if (!File.Exists(filePath))
                                         {
                                             throw new Exception("Error while creating report file");
                                         }
@@ -186,8 +211,8 @@ namespace ServiceMonitoringPlugin.Handlers
                                         await emailService.SendFileAsync(
                                             rule.Subject,
                                             recipient.Email,
-                                            rule.Text,
-                                            filePath);
+                                            filePath,
+                                            html: html);
                                     }
                                     catch (Exception e)
                                     {
@@ -195,7 +220,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                         await emailService.SendAsync(
                                             rule.Subject,
                                             recipient.Email,
-                                            rule.Text);
+                                            html: html);
                                     }
                                 }
                             }
@@ -206,7 +231,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                     await emailService.SendAsync(
                                         rule.Subject,
                                         recipient.Email,
-                                        rule.Text);
+                                        html: html);
                                 }
                             }
                         }

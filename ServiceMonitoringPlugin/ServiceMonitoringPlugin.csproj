@@ -21,4 +21,8 @@
     <PackageReference Include="System.ComponentModel.Composition" Version="4.5.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Email.html" />
+  </ItemGroup>
+
 </Project>
