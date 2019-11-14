@@ -181,7 +181,7 @@ namespace ServiceMonitoringPlugin.Handlers
                             html = html.Replace("{{label}}", field.Label)
                                 .Replace("{{description}}", field.Description.InderValue)
                                 .Replace("{{value}}", matchedValue)
-                                .Replace("{{link}}", $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}")
+                                .Replace("{{link}}", $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}")
                                 .Replace("{{text}}", rule.Text);
 
                             if (rule.AttachReport)
@@ -199,7 +199,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                             caseId,
                                             replyElement.Id.ToString(),
                                             DateTime.Now.ToString("yyyyMMddHHmmssffff"),
-                                            $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
+                                            $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
                                             "pdf",
                                             customXmlContent);
 
