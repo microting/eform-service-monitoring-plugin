@@ -181,7 +181,7 @@ namespace ServiceMonitoringPlugin.Handlers
                             html = html.Replace("{{label}}", field.Label)
                                 .Replace("{{description}}", field.Description.InderValue)
                                 .Replace("{{value}}", matchedValue)
-                                .Replace("{{link}}", $"{comAddressBasic}/cases/edit/{caseId}/{message.checkListId}")
+                                .Replace("{{link}}", $"{_sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}")
                                 .Replace("{{text}}", rule.Text);
 
                             if (rule.AttachReport)
