@@ -36,7 +36,6 @@ namespace ServiceMonitoringPlugin.Installers
         public void Install(IWindsorContainer container, IConfigurationStore store)
         {
             container.Register(Component.For<IHandleMessages<EformCompleted>>().ImplementedBy<EFormCompletedHandler>().LifestyleTransient());
-            container.Register(Component.For<IHandleMessages<EformRetrieved>>().ImplementedBy<EFormRetrievedHandler>().LifestyleTransient());
         }
     }
 }

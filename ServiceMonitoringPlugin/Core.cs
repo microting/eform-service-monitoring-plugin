@@ -75,10 +75,10 @@ namespace ServiceMonitoringPlugin
 
         public void eFormRetrived(object sender, EventArgs args)
         {
-            Case_Dto trigger = (Case_Dto)sender;
-
-            string caseId = trigger.MicrotingUId.ToString();
-            _bus.SendLocal(new EformRetrieved(caseId));
+//            Case_Dto trigger = (Case_Dto)sender;
+//
+//            string caseId = trigger.MicrotingUId.ToString();
+//            _bus.SendLocal(new EformRetrieved(caseId));
         }
 
         public void CaseCompleted(object sender, EventArgs args)

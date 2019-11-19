@@ -49,30 +49,15 @@ namespace ServiceMonitoringPlugin.Installers
 
         public void Install(IWindsorContainer container, IConfigurationStore store)
         {
-            if (_connectionString.ToLower().Contains("convert zero datetime"))
-            {
-                Configure.With(new CastleWindsorContainerAdapter(container))
-                    .Logging(l => l.ColoredConsole())
-                    .Transport(t => t.UseMySql(connectionStringOrConnectionOrConnectionStringName: _connectionString, tableName: "Rebus", inputQueueName: "items-planning-input"))
-                    .Options(o =>
-                    {
-                        o.SetMaxParallelism(_maxParallelism);
-                        o.SetNumberOfWorkers(_numberOfWorkers);
-                    })
-                    .Start();
-            }
-            else
-            {
-                Configure.With(new CastleWindsorContainerAdapter(container))
-                    .Logging(l => l.ColoredConsole())
-                    .Transport(t => t.UseSqlServer(connectionString: _connectionString, inputQueueName: "items-planning-input"))
-                    .Options(o =>
-                    {
-                        o.SetMaxParallelism(_maxParallelism);
-                        o.SetNumberOfWorkers(_numberOfWorkers);
-                    })
-                    .Start();
-            }
+            Configure.With(new CastleWindsorContainerAdapter(container))
+                .Logging(l => l.ColoredConsole())
+                .Transport(t => t.UseRabbitMq("amqp://admin:password@localhost", "eform-service-monitoring-plugin"))
+                .Options(o =>
+                {
+                    o.SetMaxParallelism(_maxParallelism);
+                    o.SetNumberOfWorkers(_numberOfWorkers);
+                })
+                .Start();
         }
     }
 }
