@@ -25,6 +25,7 @@ SOFTWARE.
 namespace ServiceMonitoringPlugin.Handlers
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -92,7 +93,9 @@ namespace ServiceMonitoringPlugin.Handlers
                 var caseId = await _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
                 var replyElement = await _sdkCore.CaseRead(message.microtingUId, message.checkUId);
                 var checkListValue = (CheckListValue)replyElement.ElementList[0];
-                var fields = checkListValue.DataItemList;
+                var fields = checkListValue.DataItemList
+                    .SelectMany(f => (f is FieldContainer fc) ? fc.DataItemList : new List<DataItem>() { f })
+                    .ToList();
 
                 var rules = await _dbContext.Rules
                     .Include(x => x.Recipients)
@@ -140,10 +143,6 @@ namespace ServiceMonitoringPlugin.Handlers
                                         sendEmail = true;
                                     }
                                 }
-                                else
-                                {
-                                    sendEmail = false;
-                                }
                                 break;
                             case "CheckBox":
                                 var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data, jsonSettings);
@@ -158,16 +157,14 @@ namespace ServiceMonitoringPlugin.Handlers
 
                                 matchedValue = field.FieldValues[0].ValueReadable;
                                 sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
-
                                 break;
                             case "EntitySearch":
                             case "EntitySelect":
                                 var entityBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
                                 var selectedId = field.FieldValues[0].Value;
-
+                                
                                 matchedValue = field.FieldValues[0].ValueReadable;
-                                sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && i.Key == selectedId);
-
+                                sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && selectedId == i.Key);
                                 break;
                         }
 
