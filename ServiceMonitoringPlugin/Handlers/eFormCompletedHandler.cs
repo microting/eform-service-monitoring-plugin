@@ -67,7 +67,7 @@ namespace ServiceMonitoringPlugin.Handlers
                     throw new Exception($"{nameof(MonitoringBaseSettings.SendGridApiKey)} not found in settings");
                 }
                 
-                Log.LogEvent($"sendGridKey is {sendGridKey.Value}");
+                Log.LogEvent($"EFormCompletedHandler.Handle: sendGridKey is {sendGridKey.Value}");
                 var fromEmailAddress = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailAddress));
                 if (fromEmailAddress == null)
@@ -75,14 +75,14 @@ namespace ServiceMonitoringPlugin.Handlers
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailAddress)} not found in settings");
                 }
                 
-                Log.LogEvent($"fromEmailAddress is {fromEmailAddress.Value}");
+                Log.LogEvent($"EFormCompletedHandler.Handle: fromEmailAddress is {fromEmailAddress.Value}");
                 var fromEmailName = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailName));
                 if (fromEmailName == null)
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailName)} not found in settings");
                 }
-                Log.LogEvent($"fromEmailName is {fromEmailName.Value}");
+                Log.LogEvent($"EFormCompletedHandler.Handle: fromEmailName is {fromEmailName.Value}");
 
                 var emailService = new EmailService(sendGridKey.Value, fromEmailAddress.Value, fromEmailName.Value);
 
@@ -120,20 +120,23 @@ namespace ServiceMonitoringPlugin.Handlers
                                 var numberVal = int.Parse(field.FieldValues[0].Value);
 
                                 matchedValue = field.FieldValues[0].Value;
-                                sendEmail = true;
+                                sendEmail = false;
 
-                                if (numberBlock.GreaterThanValue != null && numberVal < numberBlock.GreaterThanValue)
+                                if (numberBlock.GreaterThanValue != null && numberVal > numberBlock.GreaterThanValue)
                                 {
-                                    sendEmail = false;
+                                    Log.LogEvent($"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is greater than {numberBlock.GreaterThanValue}");
+                                    sendEmail = true;
                                 }
 
-                                if (numberBlock.LessThanValue != null && numberVal > numberBlock.LessThanValue)
+                                if (numberBlock.LessThanValue != null && numberVal < numberBlock.LessThanValue)
                                 {
-                                    sendEmail = false;
+                                    Log.LogEvent($"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is less than {numberBlock.GreaterThanValue}");
+                                    sendEmail = true;
                                 }
 
                                 if (numberBlock.EqualValue != null && numberVal == numberBlock.EqualValue)
                                 {
+                                    Log.LogEvent($"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is equal to {numberBlock.GreaterThanValue}");
                                     sendEmail = true;
                                 }
 
@@ -167,10 +170,10 @@ namespace ServiceMonitoringPlugin.Handlers
                         // Send email
                         if (sendEmail)
                         {
+                            Log.LogEvent($"EFormCompletedHandler.Handle: sendmail is true, so let's send an email");
                             var assembly = Assembly.GetExecutingAssembly();
                             var assemblyName = assembly.GetName().Name;
                             var stream = assembly.GetManifestResourceStream($"{assemblyName}.Resources.Email.html");
-                            var comAddressBasic = await _sdkCore.GetSdkSetting(Settings.comAddressBasic);
                             string html;
 
                             using (var reader = new StreamReader(stream, Encoding.UTF8))
