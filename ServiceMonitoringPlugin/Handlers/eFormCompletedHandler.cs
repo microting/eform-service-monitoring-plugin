@@ -25,6 +25,7 @@ SOFTWARE.
 namespace ServiceMonitoringPlugin.Handlers
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -42,6 +43,8 @@ namespace ServiceMonitoringPlugin.Handlers
     using Microting.EformMonitoringBase.Infrastructure.Models.Settings;
     using Newtonsoft.Json;
     using Rebus.Handlers;
+    using System.Globalization;
+    using OpenStack.NetCoreSwiftClient.Extensions;
 
     public class EFormCompletedHandler : IHandleMessages<EformCompleted>
     {
@@ -90,9 +93,11 @@ namespace ServiceMonitoringPlugin.Handlers
                 var caseId = await _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
                 var replyElement = await _sdkCore.CaseRead(message.microtingUId, message.checkUId);
                 var checkListValue = (CheckListValue)replyElement.ElementList[0];
-                var fields = checkListValue.DataItemList;
+                var fields = checkListValue.DataItemList
+                    .SelectMany(f => (f is FieldContainer fc) ? fc.DataItemList : new List<DataItem>() { f })
+                    .ToList();
 
-                var rules = await _dbContext.Rules.AsNoTracking()
+                var rules = await _dbContext.Rules
                     .Include(x => x.Recipients)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.CheckListId == message.checkListId)
@@ -117,29 +122,34 @@ namespace ServiceMonitoringPlugin.Handlers
                         {
                             case "Number":
                                 var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data, jsonSettings);
-                                var numberVal = int.Parse(field.FieldValues[0].Value);
 
                                 matchedValue = field.FieldValues[0].Value;
                                 sendEmail = false;
-
-                                if (numberBlock.GreaterThanValue != null && numberVal > numberBlock.GreaterThanValue)
+                                if (float.TryParse(field.FieldValues[0].Value, NumberStyles.Any,
+                                    CultureInfo.InvariantCulture, out var numberVal))
                                 {
-                                    Log.LogEvent($"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is greater than {numberBlock.GreaterThanValue}");
-                                    sendEmail = true;
-                                }
+                                    if (numberBlock.GreaterThanValue != null &&
+                                        numberVal > numberBlock.GreaterThanValue)
+                                    {
+                                        Log.LogEvent(
+                                            $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is greater than {numberBlock.GreaterThanValue}");
+                                        sendEmail = true;
+                                    }
 
-                                if (numberBlock.LessThanValue != null && numberVal < numberBlock.LessThanValue)
-                                {
-                                    Log.LogEvent($"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is less than {numberBlock.GreaterThanValue}");
-                                    sendEmail = true;
-                                }
+                                    if (numberBlock.LessThanValue != null && numberVal < numberBlock.LessThanValue)
+                                    {
+                                        Log.LogEvent(
+                                            $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is less than {numberBlock.GreaterThanValue}");
+                                        sendEmail = true;
+                                    }
 
-                                if (numberBlock.EqualValue != null && numberVal == numberBlock.EqualValue)
-                                {
-                                    Log.LogEvent($"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is equal to {numberBlock.GreaterThanValue}");
-                                    sendEmail = true;
+                                    if (numberBlock.EqualValue != null && numberVal.Equals((float)numberBlock.EqualValue))
+                                    {
+                                        Log.LogEvent(
+                                            $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is equal to {numberBlock.GreaterThanValue}");
+                                        sendEmail = true;
+                                    }
                                 }
-
                                 break;
                             case "CheckBox":
                                 var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data, jsonSettings);
@@ -154,16 +164,14 @@ namespace ServiceMonitoringPlugin.Handlers
 
                                 matchedValue = field.FieldValues[0].ValueReadable;
                                 sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
-
                                 break;
                             case "EntitySearch":
                             case "EntitySelect":
                                 var entityBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
                                 var selectedId = field.FieldValues[0].Value;
-
+                                
                                 matchedValue = field.FieldValues[0].ValueReadable;
-                                sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && i.Key == selectedId);
-
+                                sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && selectedId == i.Key);
                                 break;
                         }
 
@@ -212,7 +220,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                         }
 
                                         await emailService.SendFileAsync(
-                                            rule.Subject,
+                                            rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                             recipient.Email,
                                             filePath,
                                             html: html);
@@ -221,7 +229,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                     {
                                         Console.WriteLine(e);
                                         await emailService.SendAsync(
-                                            rule.Subject,
+                                            rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                             recipient.Email,
                                             html: html);
                                     }
@@ -232,7 +240,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                 foreach (var recipient in rule.Recipients)
                                 {
                                     await emailService.SendAsync(
-                                        rule.Subject,
+                                        rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                         recipient.Email,
                                         html: html);
                                 }
