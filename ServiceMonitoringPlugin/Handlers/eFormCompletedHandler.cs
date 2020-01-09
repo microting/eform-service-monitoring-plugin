@@ -99,6 +99,7 @@ namespace ServiceMonitoringPlugin.Handlers
 
                 var rules = await _dbContext.Rules
                     .Include(x => x.Recipients)
+                    .Include(x => x.DeviceUsers)
                     .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                     .Where(x => x.CheckListId == message.checkListId)
                     .ToListAsync();
@@ -115,7 +116,9 @@ namespace ServiceMonitoringPlugin.Handlers
                     // if no device users in rule - run this rule
                     if (deviceUsersInRule.Any())
                     {
-                        var deviceUsersInRuleIds = deviceUsersInRule.Select(x => x.DeviceUserId).ToList();
+                        var deviceUsersInRuleIds = deviceUsersInRule
+                            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+                            .Select(x => x.DeviceUserId).ToList();
                         // check if current user in rule
                         if (!deviceUsersInRuleIds.Contains(siteDto.SiteId))
                         {
