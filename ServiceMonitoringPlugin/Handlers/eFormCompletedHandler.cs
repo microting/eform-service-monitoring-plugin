@@ -108,6 +108,20 @@ namespace ServiceMonitoringPlugin.Handlers
                 {
                     var dataItemId = rule.DataItemId;
                     var field = (Field)fields.FirstOrDefault(x => x.Id == dataItemId);
+                    // get device user who completed eform
+                    var siteDto = await _sdkCore.SiteRead(replyElement.SiteMicrotingUuid);
+                    // get list of device users in rule
+                    var deviceUsersInRule = rule.DeviceUsers;
+                    // if no device users in rule - run this rule
+                    if (deviceUsersInRule.Any())
+                    {
+                        var deviceUsersInRuleIds = deviceUsersInRule.Select(x => x.DeviceUserId).ToList();
+                        // check if current user in rule
+                        if (!deviceUsersInRuleIds.Contains(siteDto.SiteId))
+                        {
+                            continue;
+                        }
+                    }
 
                     if (field != null)
                     {
