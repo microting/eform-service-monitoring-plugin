@@ -83,7 +83,7 @@ namespace ServiceMonitoringPlugin
 
         public void CaseCompleted(object sender, EventArgs args)
         {
-            Case_Dto trigger = (Case_Dto)sender;
+            CaseDto trigger = (CaseDto)sender;
 
             if (trigger.CheckUId != null && trigger.MicrotingUId != null)
             {
