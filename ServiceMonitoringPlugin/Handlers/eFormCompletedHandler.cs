@@ -120,80 +120,7 @@ namespace ServiceMonitoringPlugin.Handlers
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .Select(x => x.DeviceUserId).ToList();
                         // check if current user in rule
-                        if (!deviceUsersInRuleIds.Contains(siteDto.SiteId))
-                        {
-                            continue;
-                        }
-                    }
-
-                    if (field != null)
-                    {
-                        // Check
-                        var jsonSettings = new JsonSerializerSettings
-                        {
-                            NullValueHandling = NullValueHandling.Include
-                        };
-                        var sendEmail = false;
-                        var matchedValue = "";
-                        switch (field.FieldType)
-                        {
-                            case "Number":
-                                var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data, jsonSettings);
-
-                                matchedValue = field.FieldValues[0].Value;
-                                sendEmail = false;
-                                if (float.TryParse(field.FieldValues[0].Value, NumberStyles.Any,
-                                    CultureInfo.InvariantCulture, out var numberVal))
-                                {
-                                    if (numberBlock.GreaterThanValue != null &&
-                                        numberVal > numberBlock.GreaterThanValue)
-                                    {
-                                        Log.LogEvent(
-                                            $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is greater than {numberBlock.GreaterThanValue}");
-                                        sendEmail = true;
-                                    }
-
-                                    if (numberBlock.LessThanValue != null && numberVal < numberBlock.LessThanValue)
-                                    {
-                                        Log.LogEvent(
-                                            $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is less than {numberBlock.GreaterThanValue}");
-                                        sendEmail = true;
-                                    }
-
-                                    if (numberBlock.EqualValue != null && numberVal.Equals((float)numberBlock.EqualValue))
-                                    {
-                                        Log.LogEvent(
-                                            $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is equal to {numberBlock.GreaterThanValue}");
-                                        sendEmail = true;
-                                    }
-                                }
-                                break;
-                            case "CheckBox":
-                                var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data, jsonSettings);
-                                var isChecked = field.FieldValues[0].Value == "1" || field.FieldValues[0].Value == "checked";
-                                matchedValue = checkboxBlock.Selected ? "Checked" : "Not checked";
-                                sendEmail = isChecked == checkboxBlock.Selected;
-                                break;
-                            case "MultiSelect":
-                            case "SingleSelect":
-                                var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
-                                var selectKeys = field.FieldValues[0].Value.Split('|');
-
-                                matchedValue = field.FieldValues[0].ValueReadable;
-                                sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
-                                break;
-                            case "EntitySearch":
-                            case "EntitySelect":
-                                var entityBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
-                                var selectedId = field.FieldValues[0].Value;
-                                
-                                matchedValue = field.FieldValues[0].ValueReadable;
-                                sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && selectedId == i.Key);
-                                break;
-                        }
-
-                        // Send email
-                        if (sendEmail)
+                        if (deviceUsersInRuleIds.Contains(siteDto.SiteId))
                         {
                             Log.LogEvent($"EFormCompletedHandler.Handle: sendmail is true, so let's send an email");
                             var assembly = Assembly.GetExecutingAssembly();
@@ -206,9 +133,9 @@ namespace ServiceMonitoringPlugin.Handlers
                                 html = await reader.ReadToEndAsync();
                             }
 
-                            html = html.Replace("{{label}}", field.Label)
-                                .Replace("{{description}}", field.Description.InderValue)
-                                .Replace("{{value}}", matchedValue)
+                            html = html.Replace("{{label}}", "")
+                                .Replace("{{description}}", "")
+                                .Replace("{{value}}", siteDto.SiteName)
                                 .Replace("{{link}}", $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}")
                                 .Replace("{{text}}", rule.Text);
 
@@ -264,6 +191,149 @@ namespace ServiceMonitoringPlugin.Handlers
                             }
                         }
                     }
+                    else
+                    {
+                        if (field != null)
+                        {
+                            // Check
+                            var jsonSettings = new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Include
+                            };
+                            var sendEmail = false;
+                            var matchedValue = "";
+                            switch (field.FieldType)
+                            {
+                                case "Number":
+                                    var numberBlock = JsonConvert.DeserializeObject<NumberBlock>(rule.Data, jsonSettings);
+
+                                    matchedValue = field.FieldValues[0].Value;
+                                    sendEmail = false;
+                                    if (float.TryParse(field.FieldValues[0].Value, NumberStyles.Any,
+                                        CultureInfo.InvariantCulture, out var numberVal))
+                                    {
+                                        if (numberBlock.GreaterThanValue != null &&
+                                            numberVal > numberBlock.GreaterThanValue)
+                                        {
+                                            Log.LogEvent(
+                                                $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is greater than {numberBlock.GreaterThanValue}");
+                                            sendEmail = true;
+                                        }
+
+                                        if (numberBlock.LessThanValue != null && numberVal < numberBlock.LessThanValue)
+                                        {
+                                            Log.LogEvent(
+                                                $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is less than {numberBlock.GreaterThanValue}");
+                                            sendEmail = true;
+                                        }
+
+                                        if (numberBlock.EqualValue != null && numberVal.Equals((float)numberBlock.EqualValue))
+                                        {
+                                            Log.LogEvent(
+                                                $"EFormCompletedHandler.Handle: numberVal is {fromEmailName.Value} and is equal to {numberBlock.GreaterThanValue}");
+                                            sendEmail = true;
+                                        }
+                                    }
+                                    break;
+                                case "CheckBox":
+                                    var checkboxBlock = JsonConvert.DeserializeObject<CheckBoxBlock>(rule.Data, jsonSettings);
+                                    var isChecked = field.FieldValues[0].Value == "1" || field.FieldValues[0].Value == "checked";
+                                    matchedValue = checkboxBlock.Selected ? "Checked" : "Not checked";
+                                    sendEmail = isChecked == checkboxBlock.Selected;
+                                    break;
+                                case "MultiSelect":
+                                case "SingleSelect":
+                                    var selectBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
+                                    var selectKeys = field.FieldValues[0].Value.Split('|');
+
+                                    matchedValue = field.FieldValues[0].ValueReadable;
+                                    sendEmail = selectBlock.KeyValuePairList.Any(i => i.Selected && selectKeys.Contains(i.Key));
+                                    break;
+                                case "EntitySearch":
+                                case "EntitySelect":
+                                    var entityBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
+                                    var selectedId = field.FieldValues[0].Value;
+                                    
+                                    matchedValue = field.FieldValues[0].ValueReadable;
+                                    sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && selectedId == i.Key);
+                                    break;
+                            }
+
+                            // Send email
+                            if (sendEmail)
+                            {
+                                Log.LogEvent($"EFormCompletedHandler.Handle: sendmail is true, so let's send an email");
+                                var assembly = Assembly.GetExecutingAssembly();
+                                var assemblyName = assembly.GetName().Name;
+                                var stream = assembly.GetManifestResourceStream($"{assemblyName}.Resources.Email.html");
+                                string html;
+
+                                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                                {
+                                    html = await reader.ReadToEndAsync();
+                                }
+
+                                html = html.Replace("{{label}}", field.Label)
+                                    .Replace("{{description}}", field.Description.InderValue)
+                                    .Replace("{{value}}", matchedValue)
+                                    .Replace("{{link}}", $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}")
+                                    .Replace("{{text}}", rule.Text);
+
+                                if (rule.AttachReport)
+                                {
+                                    foreach (var recipient in rule.Recipients.Where(r => r.WorkflowState != Constants.WorkflowStates.Removed))
+                                    {
+                                        try
+                                        {
+                                            // Fix for broken SDK not handling empty customXmlContent well
+                                            string customXmlContent = new XElement("FillerElement",
+                                                new XElement("InnerElement", "SomeValue")).ToString();
+
+                                            // get report file
+                                            var filePath = await _sdkCore.CaseToPdf(
+                                                caseId,
+                                                replyElement.Id.ToString(),
+                                                DateTime.Now.ToString("yyyyMMddHHmmssffff"),
+                                                $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
+                                                "pdf",
+                                                customXmlContent);
+
+                                            if (!File.Exists(filePath))
+                                            {
+                                                throw new Exception("Error while creating report file");
+                                            }
+
+                                            await emailService.SendFileAsync(
+                                                rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                                recipient.Email,
+                                                filePath,
+                                                html: html);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Console.WriteLine(e);
+                                            await emailService.SendAsync(
+                                                rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                                recipient.Email,
+                                                html: html);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (var recipient in rule.Recipients)
+                                    {
+                                        await emailService.SendAsync(
+                                            rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                            recipient.Email,
+                                            html: html);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    
                 }
             }
             catch (Exception e)
