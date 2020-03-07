@@ -139,8 +139,9 @@ namespace ServiceMonitoringPlugin.Handlers
 
                             html = html.Replace("{{label}}", "")
                                 .Replace("{{description}}", "")
-                                .Replace("{{value}}", siteDto.SiteName)
-                                .Replace("{{link}}", $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}")
+                                .Replace("{{value}}", rule.IncludeValue ? siteDto.SiteName : "")
+                                .Replace("{{link}}", rule.AttachLink ?
+                                    $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}" : "")
                                 .Replace("{{text}}", rule.Text);
 
                             if (rule.AttachReport)
@@ -279,8 +280,9 @@ namespace ServiceMonitoringPlugin.Handlers
 
                                 html = html.Replace("{{label}}", field.Label)
                                     .Replace("{{description}}", field.Description.InderValue)
-                                    .Replace("{{value}}", matchedValue)
-                                    .Replace("{{link}}", $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}")
+                                    .Replace("{{value}}", rule.IncludeValue ? matchedValue : "")
+                                    .Replace("{{link}}", rule.AttachLink ?
+                                        $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}" : "")
                                     .Replace("{{text}}", rule.Text);
 
                                 if (rule.AttachReport)
