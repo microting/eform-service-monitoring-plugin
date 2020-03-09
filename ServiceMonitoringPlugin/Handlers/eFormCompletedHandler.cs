@@ -120,13 +120,13 @@ namespace ServiceMonitoringPlugin.Handlers
                     // if no device users in rule - run this rule
                     if (deviceUsersInRule.Any())
                     {
+                        Log.LogEvent($"EFormCompletedHandler.Handle: deviceUsersInRule contains elements");
                         var deviceUsersInRuleIds = deviceUsersInRule
                             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
                             .Select(x => x.DeviceUserId).ToList();
                         // check if current user in rule
                         if (deviceUsersInRuleIds.Contains(siteDto.SiteId))
                         {
-                            Log.LogEvent($"EFormCompletedHandler.Handle: sendmail is true, so let's send an email");
                             var assembly = Assembly.GetExecutingAssembly();
                             var assemblyName = assembly.GetName().Name;
                             var stream = assembly.GetManifestResourceStream($"{assemblyName}.Resources.Email.html");
@@ -146,6 +146,7 @@ namespace ServiceMonitoringPlugin.Handlers
 
                             if (rule.AttachReport)
                             {
+                                Log.LogEvent("EFormCompletedHandler.Handle: rule.AttachReport = true");
                                 foreach (var recipient in rule.Recipients.Where(r => r.WorkflowState != Constants.WorkflowStates.Removed))
                                 {
                                     try
@@ -167,7 +168,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                         {
                                             throw new Exception("Error while creating report file");
                                         }
-
+                                        Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                         await emailService.SendFileAsync(
                                             rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                             recipient.Email,
@@ -176,7 +177,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                     }
                                     catch (Exception e)
                                     {
-                                        Console.WriteLine(e);
+                                        Log.LogException($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                         await emailService.SendAsync(
                                             rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                             recipient.Email,
@@ -186,8 +187,11 @@ namespace ServiceMonitoringPlugin.Handlers
                             }
                             else
                             {
+                                Log.LogEvent("EFormCompletedHandler.Handle: rule.AttachReport = false");
+
                                 foreach (var recipient in rule.Recipients)
                                 {
+                                    Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                     await emailService.SendAsync(
                                         rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                         recipient.Email,
@@ -309,6 +313,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                                 throw new Exception("Error while creating report file");
                                             }
 
+                                            Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                             await emailService.SendFileAsync(
                                                 rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                                 recipient.Email,
@@ -317,7 +322,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                         }
                                         catch (Exception e)
                                         {
-                                            Console.WriteLine(e);
+                                            Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                             await emailService.SendAsync(
                                                 rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                                 recipient.Email,
@@ -329,6 +334,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                 {
                                     foreach (var recipient in rule.Recipients)
                                     {
+                                        Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                         await emailService.SendAsync(
                                             rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
                                             recipient.Email,
