@@ -107,12 +107,6 @@ namespace ServiceMonitoringPlugin.Handlers
                 // Find trigger
                 foreach (var rule in rules)
                 {
-                    if (rule.DataItemId == null)
-                    {
-                        continue;
-                    }
-                    var dataItemId = rule.DataItemId;
-                    var field = (Field)fields.FirstOrDefault(x => x.Id == dataItemId);
                     // get device user who completed eform
                     var siteDto = await _sdkCore.SiteRead(replyElement.SiteMicrotingUuid);
                     // get list of device users in rule
@@ -202,6 +196,13 @@ namespace ServiceMonitoringPlugin.Handlers
                     }
                     else
                     {
+                        if (rule.DataItemId == null)
+                        {
+                            continue;
+                        }
+                        var dataItemId = rule.DataItemId;
+                        var field = (Field)fields.FirstOrDefault(x => x.Id == dataItemId);
+                        
                         if (field != null)
                         {
                             // Check
