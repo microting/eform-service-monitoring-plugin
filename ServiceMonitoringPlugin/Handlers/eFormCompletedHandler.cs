@@ -137,6 +137,15 @@ namespace ServiceMonitoringPlugin.Handlers
                                 .Replace("{{link}}", rule.AttachLink ?
                                     $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}" : "")
                                 .Replace("{{text}}", rule.Text);
+                            if (!rule.AttachLink)
+                            {
+                                html = html.Replace("Open case", "");
+                            }
+
+                            if (!rule.IncludeValue)
+                            {
+                                html = html.Replace("Value:", "");
+                            }
 
                             if (rule.AttachReport)
                             {
@@ -290,6 +299,16 @@ namespace ServiceMonitoringPlugin.Handlers
                                         $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/cases/edit/{caseId}/{message.checkListId}" : "")
                                     .Replace("{{text}}", rule.Text);
 
+                                if (!rule.AttachLink)
+                                {
+                                    html = html.Replace("Open case", "");
+                                }
+
+                                if (!rule.IncludeValue)
+                                {
+                                    html = html.Replace("Value:", "");
+                                }
+                                
                                 if (rule.AttachReport)
                                 {
                                     foreach (var recipient in rule.Recipients.Where(r => r.WorkflowState != Constants.WorkflowStates.Removed))
