@@ -27,4 +27,4 @@ if [ -d "/var/www/microting/eform-debian-service/MicrotingService/out/Plugins/Se
 fi
 
 su ubuntu -c \
-"cp -av /var/www/microting/eform-service-monitoring-plugin/ServiceMonitoringPlugin/out /var/www/microting/eform-debian-service/MicrotingService/out/Plugins/ServiceMonitoringPlugin"
+"cp -av /var/www/microting/eform-service-monitoring-plugin/out /var/www/microting/eform-debian-service/MicrotingService/out/Plugins/ServiceMonitoringPlugin"
