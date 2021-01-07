@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+using DocumentFormat.OpenXml.Wordprocessing;
+
 namespace ServiceMonitoringPlugin.Handlers
 {
     using System;
@@ -352,7 +354,9 @@ namespace ServiceMonitoringPlugin.Handlers
                                 }
                                 else
                                 {
-                                    foreach (var recipient in rule.Recipients)
+                                    var recipients = await _dbContext.Recipients
+                                        .Where(x => x.NotificationRuleId == rule.Id).ToListAsync();
+                                    foreach (var recipient in recipients)
                                     {
                                         Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                         await emailService.SendAsync(
