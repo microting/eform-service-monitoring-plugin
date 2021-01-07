@@ -41,8 +41,13 @@ jobs:
       run: dotnet build --configuration Release --no-restore
     - name: Unit Tests
       run: dotnet test --no-restore -c Release -v n ServiceMonitoringPlugin.Integration.Test/ServiceMonitoringPlugin.Integration.Test.csproj
-    - name: The job has failed
+    - name: Notify slack fail
       if: ${{ failure() }}
-      run: |
-        cat dotnet_log
-        cat eform-angular-frontend/eform-client/npm_log
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        message_id: ${{ steps.slack.outputs.message_id }}
+        channel_id: C018LS2S7T3
+        status: FAILED
+        color: danger
