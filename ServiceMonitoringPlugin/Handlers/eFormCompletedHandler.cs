@@ -23,6 +23,8 @@ SOFTWARE.
 */
 
 using DocumentFormat.OpenXml.Wordprocessing;
+using Microting.eForm.Infrastructure;
+using Microting.eForm.Infrastructure.Data.Entities;
 
 namespace ServiceMonitoringPlugin.Handlers
 {
@@ -58,7 +60,7 @@ namespace ServiceMonitoringPlugin.Handlers
             _dbContext = dbContext;
             _sdkCore = sdkCore;
         }
-        
+
         public async Task Handle(EformCompleted message)
         {
             try
@@ -71,7 +73,7 @@ namespace ServiceMonitoringPlugin.Handlers
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.SendGridApiKey)} not found in settings");
                 }
-                
+
                 Log.LogEvent($"EFormCompletedHandler.Handle: sendGridKey is {sendGridKey.Value}");
                 var fromEmailAddress = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailAddress));
@@ -79,7 +81,7 @@ namespace ServiceMonitoringPlugin.Handlers
                 {
                     throw new Exception($"{nameof(MonitoringBaseSettings.FromEmailAddress)} not found in settings");
                 }
-                
+
                 Log.LogEvent($"EFormCompletedHandler.Handle: fromEmailAddress is {fromEmailAddress.Value}");
                 var fromEmailName = settings.FirstOrDefault(x =>
                     x.Name == nameof(MonitoringBaseSettings) + ":" + nameof(MonitoringBaseSettings.FromEmailName));
@@ -92,8 +94,12 @@ namespace ServiceMonitoringPlugin.Handlers
                 var emailService = new EmailService(sendGridKey.Value, fromEmailAddress.Value, fromEmailName.Value);
 
                 // Get rules
+                await using MicrotingDbContext microtingDbContext = _sdkCore.dbContextHelper.GetDbContext();
                 var caseId = await _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
-                var replyElement = await _sdkCore.CaseRead(message.microtingUId, message.checkUId);
+                Microting.eForm.Infrastructure.Data.Entities.Case sdkCase = await microtingDbContext.Cases.SingleAsync(x => x.MicrotingUid == message.microtingUId);
+                Site site = await microtingDbContext.Sites.SingleAsync(x => x.Id == sdkCase.SiteId);
+                Language language = await microtingDbContext.Languages.SingleAsync(x => x.Id == site.LanguageId);
+                var replyElement = await _sdkCore.CaseRead(message.microtingUId, message.checkUId, language);
                 var checkListValue = (CheckListValue)replyElement.ElementList[0];
                 var fields = checkListValue.DataItemList
                     .SelectMany(f => (f is FieldContainer fc) ? fc.DataItemList : new List<DataItem>() { f })
@@ -167,7 +173,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                             DateTime.Now.ToString("yyyyMMddHHmmssffff"),
                                             $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
                                             "pdf",
-                                            customXmlContent);
+                                            customXmlContent, language);
 
                                         if (!File.Exists(filePath))
                                         {
@@ -213,7 +219,7 @@ namespace ServiceMonitoringPlugin.Handlers
                         }
                         var dataItemId = rule.DataItemId;
                         var field = (Field)fields.FirstOrDefault(x => x.Id == dataItemId);
-                        
+
                         if (field != null)
                         {
                             // Check
@@ -274,7 +280,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                 case "EntitySelect":
                                     var entityBlock = JsonConvert.DeserializeObject<SelectBlock>(rule.Data, jsonSettings);
                                     var selectedId = field.FieldValues[0].Value;
-                                    
+
                                     matchedValue = field.FieldValues[0].ValueReadable;
                                     sendEmail = entityBlock.KeyValuePairList.Any(i => i.Selected && selectedId == i.Key);
                                     break;
@@ -310,7 +316,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                 {
                                     html = html.Replace("Value:", "");
                                 }
-                                
+
                                 if (rule.AttachReport)
                                 {
                                     foreach (var recipient in rule.Recipients.Where(r => r.WorkflowState != Constants.WorkflowStates.Removed))
@@ -328,7 +334,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                                 DateTime.Now.ToString("yyyyMMddHHmmssffff"),
                                                 $"{await _sdkCore.GetSdkSetting(Settings.httpServerAddress)}/" + "api/template-files/get-image/",
                                                 "pdf",
-                                                customXmlContent);
+                                                customXmlContent, language);
 
                                             if (!File.Exists(filePath))
                                             {
@@ -369,7 +375,7 @@ namespace ServiceMonitoringPlugin.Handlers
                         }
                     }
 
-                    
+
                 }
             }
             catch (Exception e)
