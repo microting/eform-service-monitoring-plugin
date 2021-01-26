@@ -94,7 +94,7 @@ namespace ServiceMonitoringPlugin.Handlers
                 var emailService = new EmailService(sendGridKey.Value, fromEmailAddress.Value, fromEmailName.Value);
 
                 // Get rules
-                await using MicrotingDbContext microtingDbContext = _sdkCore.dbContextHelper.GetDbContext();
+                await using MicrotingDbContext microtingDbContext = _sdkCore.DbContextHelper.GetDbContext();
                 var caseId = await _sdkCore.CaseIdLookup(message.microtingUId, message.checkUId) ?? 0;
                 Microting.eForm.Infrastructure.Data.Entities.Case sdkCase = await microtingDbContext.Cases.SingleAsync(x => x.MicrotingUid == message.microtingUId);
                 Site site = await microtingDbContext.Sites.SingleAsync(x => x.Id == sdkCase.SiteId);
