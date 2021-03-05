@@ -1,5 +1,18 @@
 # Changelog
 
+## [v1.0.60](https://github.com/microting/eform-service-monitoring-plugin/tree/v1.0.60) (2021-03-05)
+
+[Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.59...v1.0.60)
+
+**Implemented enhancements:**
+
+- Bump Microting.eFormApi.BasePn from 2.0.98 to 2.0.99 [\#54](https://github.com/microting/eform-service-monitoring-plugin/issues/54)
+- Bump Microting.eForm from 4.4.2 to 4.4.3 [\#53](https://github.com/microting/eform-service-monitoring-plugin/issues/53)
+
+**Merged pull requests:**
+
+- Bump Microsoft.NET.Test.Sdk from 16.8.3 to 16.9.1 [\#49](https://github.com/microting/eform-service-monitoring-plugin/pull/49) ([dependabot-preview[bot]](https://github.com/apps/dependabot-preview))
+
 ## [v1.0.59](https://github.com/microting/eform-service-monitoring-plugin/tree/v1.0.59) (2021-02-24)
 
 [Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.58...v1.0.59)
