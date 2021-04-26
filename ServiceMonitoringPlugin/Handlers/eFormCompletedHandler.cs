@@ -381,7 +381,6 @@ namespace ServiceMonitoringPlugin.Handlers
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                throw;
             }
         }
     }
