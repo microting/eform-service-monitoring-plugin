@@ -1,8 +1,14 @@
 # Changelog
 
-## [Unreleased](https://github.com/microting/eform-service-monitoring-plugin/tree/HEAD)
+## [v1.0.65](https://github.com/microting/eform-service-monitoring-plugin/tree/v1.0.65) (2021-05-07)
 
-[Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.64...HEAD)
+[Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.64...v1.0.65)
+
+**Implemented enhancements:**
+
+- Bump Microting.EformMonitoringBase from 2.1.1 to 3.0.7 [\#145](https://github.com/microting/eform-service-monitoring-plugin/issues/145)
+- Bump Microting.eFormApi.BasePn from 2.1.1 to 3.0.8 [\#144](https://github.com/microting/eform-service-monitoring-plugin/issues/144)
+- Bump Microting.eForm from 4.5.1 to 5.1.4 [\#143](https://github.com/microting/eform-service-monitoring-plugin/issues/143)
 
 **Merged pull requests:**
 
