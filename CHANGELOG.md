@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased](https://github.com/microting/eform-service-monitoring-plugin/tree/HEAD)
+
+[Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.82...HEAD)
+
+**Merged pull requests:**
+
+- Bump sendgrid from 9.24.0 to 9.24.1 [\#206](https://github.com/microting/eform-service-monitoring-plugin/pull/206) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+## [v1.0.82](https://github.com/microting/eform-service-monitoring-plugin/tree/v1.0.82) (2021-07-15)
+
+[Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.81...v1.0.82)
+
 ## [v1.0.81](https://github.com/microting/eform-service-monitoring-plugin/tree/v1.0.81) (2021-07-08)
 
 [Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.80...v1.0.81)
