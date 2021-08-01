@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.0.84](https://github.com/microting/eform-service-monitoring-plugin/tree/v1.0.84) (2021-08-01)
+
+[Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.83...v1.0.84)
+
 ## [v1.0.83](https://github.com/microting/eform-service-monitoring-plugin/tree/v1.0.83) (2021-07-16)
 
 [Full Changelog](https://github.com/microting/eform-service-monitoring-plugin/compare/v1.0.82...v1.0.83)
