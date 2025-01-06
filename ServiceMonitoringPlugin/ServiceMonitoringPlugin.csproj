@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="7.0.0" />
     <PackageReference Include="Microting.eForm" Version="9.0.6" />
     <PackageReference Include="Microting.eFormApi.BasePn" Version="9.0.3" />
-    <PackageReference Include="Microting.EformMonitoringBase" Version="3.0.151" />
+    <PackageReference Include="Microting.EformMonitoringBase" Version="8.0.0" />
     <PackageReference Include="Microting.WindowsService.BasePn" Version="2.0.0" />
     <PackageReference Include="sendgrid" Version="9.29.1" />
     <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
