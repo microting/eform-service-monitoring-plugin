@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2019 Microting A/S
+Copyright (c) 2007 - 2025 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,36 +28,35 @@ using Castle.MicroKernel.SubSystems.Configuration;
 using Castle.Windsor;
 using Rebus.Config;
 
-namespace ServiceMonitoringPlugin.Installers
+namespace ServiceMonitoringPlugin.Installers;
+
+public class RebusInstaller: IWindsorInstaller
 {
-    public class RebusInstaller: IWindsorInstaller
+    private readonly string _connectionString;
+    private readonly int _maxParallelism;
+    private readonly int _numberOfWorkers;
+
+    public RebusInstaller(string connectionString, int maxParallelism, int numberOfWorkers)
     {
-        private readonly string _connectionString;
-        private readonly int _maxParallelism;
-        private readonly int _numberOfWorkers;
-
-        public RebusInstaller(string connectionString, int maxParallelism, int numberOfWorkers)
+        if (string.IsNullOrEmpty(connectionString))
         {
-            if (string.IsNullOrEmpty(connectionString))
+            throw new ArgumentNullException(nameof(connectionString));
+        }
+        _connectionString = connectionString;
+        _maxParallelism = maxParallelism;
+        _numberOfWorkers = numberOfWorkers;
+    }
+
+    public void Install(IWindsorContainer container, IConfigurationStore store)
+    {
+        Configure.With(new CastleWindsorContainerAdapter(container))
+            .Logging(l => l.ColoredConsole())
+            .Transport(t => t.UseRabbitMq("amqp://admin:password@localhost", "eform-service-monitoring-plugin"))
+            .Options(o =>
             {
-                throw new ArgumentNullException(nameof(connectionString));
-            }
-            _connectionString = connectionString;
-            _maxParallelism = maxParallelism;
-            _numberOfWorkers = numberOfWorkers;
-        }
-
-        public void Install(IWindsorContainer container, IConfigurationStore store)
-        {
-            Configure.With(new CastleWindsorContainerAdapter(container))
-                .Logging(l => l.ColoredConsole())
-                .Transport(t => t.UseRabbitMq("amqp://admin:password@localhost", "eform-service-monitoring-plugin"))
-                .Options(o =>
-                {
-                    o.SetMaxParallelism(_maxParallelism);
-                    o.SetNumberOfWorkers(_numberOfWorkers);
-                })
-                .Start();
-        }
+                o.SetMaxParallelism(_maxParallelism);
+                o.SetNumberOfWorkers(_numberOfWorkers);
+            })
+            .Start();
     }
 }

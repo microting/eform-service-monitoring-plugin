@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2019 Microting A/S
+Copyright (c) 2007 - 2025 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace ServiceMonitoringPlugin.Messages
-{
-    public class EformRetrieved
-    {
-        public string CaseId { get; protected set; }
+namespace ServiceMonitoringPlugin.Messages;
 
-        public EformRetrieved(string caseId)
-        {
-            this.CaseId = caseId;
-        }
+public class EformRetrieved
+{
+    public string CaseId { get; protected set; }
+
+    public EformRetrieved(string caseId)
+    {
+        this.CaseId = caseId;
     }
 }
