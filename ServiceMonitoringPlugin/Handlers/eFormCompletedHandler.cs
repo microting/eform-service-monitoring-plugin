@@ -48,7 +48,6 @@ namespace ServiceMonitoringPlugin.Handlers
     using Newtonsoft.Json;
     using Rebus.Handlers;
     using System.Globalization;
-    using OpenStack.NetCoreSwiftClient.Extensions;
 
     public class EFormCompletedHandler : IHandleMessages<EformCompleted>
     {
@@ -181,7 +180,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                         }
                                         Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                         await emailService.SendFileAsync(
-                                            rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                            string.IsNullOrEmpty(rule.Subject) ? "-" : rule.Subject,
                                             recipient.Email,
                                             filePath,
                                             html: html);
@@ -190,7 +189,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                     {
                                         Log.LogException($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                         await emailService.SendAsync(
-                                            rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                            string.IsNullOrEmpty(rule.Subject) ? "-" : rule.Subject,
                                             recipient.Email,
                                             html: html);
                                     }
@@ -204,7 +203,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                 {
                                     Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                     await emailService.SendAsync(
-                                        rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                        string.IsNullOrEmpty(rule.Subject) ? "-" : rule.Subject,
                                         recipient.Email,
                                         html: html);
                                 }
@@ -343,7 +342,7 @@ namespace ServiceMonitoringPlugin.Handlers
 
                                             Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                             await emailService.SendFileAsync(
-                                                rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                                string.IsNullOrEmpty(rule.Subject) ? "-" : rule.Subject,
                                                 recipient.Email,
                                                 filePath,
                                                 html: html);
@@ -352,7 +351,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                         {
                                             Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                             await emailService.SendAsync(
-                                                rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                                string.IsNullOrEmpty(rule.Subject) ? "-" : rule.Subject,
                                                 recipient.Email,
                                                 html: html);
                                         }
@@ -366,7 +365,7 @@ namespace ServiceMonitoringPlugin.Handlers
                                     {
                                         Log.LogEvent($"EFormCompletedHandler.Handle: Sending message to {recipient.Email}");
                                         await emailService.SendAsync(
-                                            rule.Subject.IsNullOrEmpty() ? "-" : rule.Subject,
+                                            string.IsNullOrEmpty(rule.Subject) ? "-" : rule.Subject,
                                             recipient.Email,
                                             html: html);
                                     }
