@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2007 - 2019 Microting A/S
+Copyright (c) 2007 - 2025 Microting A/S
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,20 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-namespace ServiceMonitoringPlugin.Installers
-{
-    using Castle.MicroKernel.Registration;
-    using Castle.MicroKernel.SubSystems.Configuration;
-    using Castle.Windsor;
-    using Handlers;
-    using Messages;
-    using Rebus.Handlers;
+namespace ServiceMonitoringPlugin.Installers;
 
-    public class RebusHandlerInstaller : IWindsorInstaller
+using Castle.MicroKernel.Registration;
+using Castle.MicroKernel.SubSystems.Configuration;
+using Castle.Windsor;
+using Handlers;
+using Messages;
+using Rebus.Handlers;
+
+public class RebusHandlerInstaller : IWindsorInstaller
+{
+    public void Install(IWindsorContainer container, IConfigurationStore store)
     {
-        public void Install(IWindsorContainer container, IConfigurationStore store)
-        {
-            container.Register(Component.For<IHandleMessages<EformCompleted>>().ImplementedBy<EFormCompletedHandler>().LifestyleTransient());
-        }
+        container.Register(Component.For<IHandleMessages<EformCompleted>>().ImplementedBy<EFormCompletedHandler>().LifestyleTransient());
     }
 }
