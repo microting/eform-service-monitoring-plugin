@@ -26,6 +26,7 @@ namespace ServiceMonitoringPlugin;
 
 using System;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Castle.MicroKernel.Registration;
@@ -33,6 +34,8 @@ using Castle.Windsor;
 using Installers;
 using Messages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microting.eForm.Dto;
 using Microting.EformMonitoringBase.Infrastructure.Data;
 using Microting.EformMonitoringBase.Infrastructure.Data.Factories;
@@ -137,7 +140,11 @@ public class Core : ISdkEventHandler
                 EformMonitoringPnDbContextFactory contextFactory = new EformMonitoringPnDbContextFactory();
 
                 _dbContext = contextFactory.CreateDbContext(new[] { connectionString });
-                _dbContext.Database.Migrate();
+                var historyRepo = _dbContext.GetService<IHistoryRepository>();
+                if (!historyRepo.Exists() || _dbContext.Database.GetPendingMigrations().Any())
+                {
+                    _dbContext.Database.Migrate();
+                }
 
                 _coreAvailable = true;
                 _coreStatChanging = false;
